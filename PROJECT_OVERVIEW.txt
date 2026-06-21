@@ -1,0 +1,564 @@
+================================================================================
+                         CONNECTIVE — PROJECT OVERVIEW
+================================================================================
+
+Last updated: June 2026
+
+This document explains, in detail, what the Connective Director Matcher project
+is, how it works, and everything it is capable of doing.
+
+
+================================================================================
+1. WHAT IS THIS PROJECT?
+================================================================================
+
+Connective is an AI-powered director matching platform built for creative
+production teams, agencies, and producers who need to find the right commercial
+or film director for a specific project.
+
+Instead of manually searching through spreadsheets, scrolling reels, or relying
+on memory, Connective lets you describe a project in natural language — and
+optionally upload scripts, storyboards, and reference images — and returns a
+ranked list of directors from a curated database who best match the project's
+creative needs.
+
+At its core, Connective combines:
+
+  • A structured director database (sourced from Excel spreadsheets)
+  • Semantic vector search powered by OpenAI embeddings
+  • GPT-4o analysis for understanding project vibe, tone, and visual style
+  • A library of real agency briefs (PDFs from brands like Nike, Toyota,
+    Calvin Klein, Coach, and others) used as reference points for matching
+  • A modern web interface for searching, filtering, and reviewing results
+
+The application is built as a Next.js 14 web app with a React frontend and
+server-side API routes. All AI processing happens through the OpenAI API.
+
+
+================================================================================
+2. WHO IS THIS FOR?
+================================================================================
+
+Connective is designed for:
+
+  • Creative producers searching for directors on a new brief
+  • Agency teams pitching or staffing commercial projects
+  • Production companies building shortlists for client review
+  • Anyone managing a large roster of directors who needs fast, intelligent
+    search instead of manual spreadsheet filtering
+
+The tool is especially useful when a brief is creative and subjective — e.g.
+"we need someone who does intimate, naturalistic lifestyle work with a warm,
+documentary feel" — rather than a simple keyword lookup like "director in LA."
+
+
+================================================================================
+3. MAIN FEATURES AND CAPABILITIES
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+3.1  NATURAL LANGUAGE PROJECT BRIEF SEARCH
+────────────────────────────────────────────────────────────────────────────────
+
+Users type a free-form project brief describing what they need in a director.
+Examples:
+
+  • "Need a comedy director for a car commercial"
+  • "Looking for someone who does lifestyle and beauty content"
+  • "Sports director with automotive experience"
+  • "Director who can do VFX-heavy action spots"
+
+The app also provides Quick Start prompt buttons that pre-fill the brief field
+with common search examples.
+
+When the user clicks "Find Directors," the system:
+
+  1. Analyzes the brief with GPT-4o to extract structured creative metadata
+  2. Creates a semantic embedding of the full query (brief + any uploaded files)
+  3. Compares that embedding against every director in the database
+  4. Applies a hybrid scoring algorithm (semantic + rule-based bonuses)
+  5. Returns the top 12 director matches with scores and explanations
+
+
+────────────────────────────────────────────────────────────────────────────────
+3.2  PROJECT ANALYSIS (AI VIBE BREAKDOWN)
+────────────────────────────────────────────────────────────────────────────────
+
+Before showing director results, Connective generates a "Project Analysis"
+panel that breaks down the brief into structured creative attributes:
+
+  • Overall Vibe — the mood and energy of the project (e.g. "luxury and
+    sophisticated", "energetic and playful", "intimate and emotional")
+
+  • Required Cinematic Skills — specific techniques or production approaches
+    needed (e.g. "VFX-heavy action sequences", "documentary-style authenticity",
+    "high-end beauty cinematography", "dynamic camera movement")
+
+  • Key Themes — conceptual themes extracted from the brief (e.g. sustainability,
+    performance, heritage, diversity)
+
+  • Genre — mapped to standardized categories:
+    STORYTELLING, DANCE, CAR, BEAUTY, FASHION, LIFESTYLE, SPORTS, MUSIC,
+    DOCUMENTARY, ACTION, COMEDY
+
+  • Specialties — director skill tags needed for the project (e.g. vfx,
+    celebrities, automotive, lifestyle, stunt, cinematic)
+
+  • Tone — the emotional register (e.g. "serious and inspirational",
+    "playful and energetic")
+
+  • Visual Style — aesthetic description (e.g. "high-end polished",
+    "naturalistic documentary", "stylized and cinematic", "gritty and authentic")
+
+This analysis helps users understand how the system interpreted their brief
+and gives producers a shared vocabulary when reviewing director options.
+
+
+────────────────────────────────────────────────────────────────────────────────
+3.3  MULTIMODAL FILE UPLOAD (SCRIPTS, PDFs, STORYBOARDS, IMAGES)
+────────────────────────────────────────────────────────────────────────────────
+
+Users can optionally upload supporting creative materials via drag-and-drop
+or file browse. Supported formats:
+
+  TEXT / DOCUMENTS:
+    • .txt — plain text scripts or notes
+    • .pdf — scripts, treatments, or brief documents (text is extracted)
+
+  IMAGES:
+    • .jpg, .jpeg, .png, .gif, .webp — storyboard frames, mood boards,
+      reference stills, or any visual creative reference
+
+When files are uploaded, the system processes them as follows:
+
+  FOR TEXT AND PDF FILES:
+    • PDF text is extracted using pdf-parse
+    • PDF pages are also rendered as images (up to 5 pages) and analyzed
+      individually with GPT-4o Vision
+    • Extracted text and image analyses are combined into supplemental context
+      that gets merged with the user's brief during search
+
+  FOR IMAGE FILES:
+    • Each image is sent to GPT-4o Vision with a specialized prompt that
+      analyzes visual aesthetic, mood, tone, production style, color palette,
+      lighting, and directorial approach
+    • The resulting descriptions are appended to the search context
+
+This means a producer can upload a storyboard PDF and a few reference photos,
+and Connective will incorporate the visual language of those materials — not
+just the written brief — when finding matching directors.
+
+
+────────────────────────────────────────────────────────────────────────────────
+3.4  SEMANTIC DIRECTOR MATCHING (HYBRID SCORING)
+────────────────────────────────────────────────────────────────────────────────
+
+Director matching uses a hybrid algorithm that combines AI semantic similarity
+with rule-based creative matching:
+
+  BASE SCORE (85% weight):
+    Cosine similarity between the query embedding and each director's pre-computed
+    embedding vector. Embeddings are generated with OpenAI text-embedding-3-large
+    from a rich profile text that includes the director's name, genre, specialties,
+    brands, industries, location, and notes.
+
+  GENRE BONUS (+8%):
+    Applied when the query's detected genre matches the director's primary genre.
+
+  SPECIALTY BONUS (+5% per match, max +15%):
+    Applied for each matching specialty tag between the query and the director
+    (e.g. if the brief mentions "vfx" and the director lists "vfx" as a specialty).
+
+  VIBE BONUS (+3%):
+    Applied when vibe keywords extracted from similar agency briefs align with
+    a director's specialty tags.
+
+  BRAND / INDUSTRY BONUS (+5%):
+    Applied when the query mentions brands or industries that appear in the
+    director's portfolio history.
+
+  POSITION PENALTY (-3%):
+    Applied when the person in the database is not listed as a director
+    (e.g. they are a photographer or other role).
+
+Each result includes:
+  • Match score (displayed as a percentage)
+  • Human-readable reason string (e.g. "72% semantic • genre match, 2 specialty matches")
+  • Director name, genre, location
+  • Top specialty tags (up to 6)
+  • Links to website, Vimeo reel, and email (extracted from Excel hyperlinks)
+
+
+────────────────────────────────────────────────────────────────────────────────
+3.5  TOP PICK RECOMMENDATION PANEL
+────────────────────────────────────────────────────────────────────────────────
+
+The #1 ranked director is highlighted in a dedicated "Top Pick" sidebar panel
+that includes:
+
+  • Director name and match score
+  • Genre and location
+  • Specialty tags
+  • AI-generated recommendation — GPT-4o writes a 2–3 sentence explanation of
+    why this specific director is the best fit, referencing the project vibe,
+    tone, visual style, themes, and the director's strengths
+  • Quick links to reel (Vimeo), website, and email
+  • Related Agency Briefs — see section 3.6 below
+
+This panel stays sticky as the user scrolls through the full results list.
+
+
+────────────────────────────────────────────────────────────────────────────────
+3.6  AGENCY BRIEF LIBRARY AND SIMILAR BRIEF MATCHING
+────────────────────────────────────────────────────────────────────────────────
+
+Connective includes a curated library of real agency brief PDFs from major
+brands, stored in the "AGENCY BRIEFS 2" folder. Current brands in the library
+include (among others):
+
+  Calvin Klein, Canijilla, Coach, Frito Lay, Lacoste, Lincoln, Louis Philippe,
+  Martell, Metro, Michelob, Nike, Nurtec, Ploom, Smirnoff, Toyota, Ubisoft,
+  UFC Med
+
+Each brief has been pre-processed (via npm run process-briefs) to extract:
+
+  • Brand name
+  • Full text content
+  • AI-analyzed vibe, genre, specialties, tone, and visual style
+  • A semantic embedding vector
+
+When a user searches, Connective finds the 3 most semantically similar agency
+briefs to the current query. These appear in the Top Pick panel under
+"Related Briefs" with:
+
+  • Brand name
+  • Similarity percentage
+  • Vibe, tone, and style tags
+  • Genre tags
+  • A "View Brief PDF" link that opens the original agency brief document
+
+This feature helps producers say: "Your project is similar to what Nike needed
+for their last campaign" — grounding the recommendation in real historical work.
+
+
+────────────────────────────────────────────────────────────────────────────────
+3.7  RESULT FILTERING
+────────────────────────────────────────────────────────────────────────────────
+
+After search results are returned, users can filter the top 12 directors by:
+
+  GENRE:
+    All Genres, STORYTELLING, DANCE, CAR, BEAUTY, FASHION, LIFESTYLE, SPORTS,
+    MUSIC, DOCUMENTARY, ACTION, COMEDY
+
+  LOCATION:
+    All Locations, Los Angeles, London, New York, Paris, Munich, Berlin,
+    Amsterdam, Toronto, Sydney, Tokyo
+
+Filters apply client-side to the returned results without requiring a new search.
+
+
+────────────────────────────────────────────────────────────────────────────────
+3.8  DIRECTOR RESULT CARDS
+────────────────────────────────────────────────────────────────────────────────
+
+Each director in the results list is displayed as a detailed card showing:
+
+  • Name and match score percentage
+  • Primary genre
+  • Top specialty tags (visual chips)
+  • Location
+  • Placeholder area for sample videos (UI ready for future reel integration)
+  • Links to website, Vimeo, and email
+  • Match reason explaining why they ranked where they did
+
+Cards have hover animations and a polished dark UI with cyan accent styling.
+
+
+================================================================================
+4. DIRECTOR DATABASE
+================================================================================
+
+The director database is sourced from Excel spreadsheets:
+
+  PRIMARY SOURCE:
+    Connective-Director-Database_FINAL_UPDATED-DEMOGRAPHICS_MERGED-RESTORED.xlsx
+
+  FALLBACK SOURCE:
+    data/DIRECTOR DATABASE MASTER (2).xlsm
+
+The ETL script (npm run etl) extracts and normalizes the following fields
+for each person in the database:
+
+  • id — unique identifier
+  • name — director's name
+  • position — role (Director, Photographer, etc.)
+  • genre — primary creative genre
+  • specialty — array of specialty tags (normalized from comma/slash-separated
+    text, with common typos corrected)
+  • brands — brands the director has worked with
+  • industry — industry categories
+  • location — city/region
+  • notes — additional notes from the spreadsheet
+  • urls — website, Vimeo reel, and email (preserved from Excel hyperlinks)
+  • profile_text — concatenated text used for embedding generation
+
+The extracted data is saved to data/directors.json (gitignored, generated locally).
+
+
+================================================================================
+5. DATA PIPELINE AND SCRIPTS
+================================================================================
+
+Connective has three CLI scripts for preparing data:
+
+────────────────────────────────────────────────────────────────────────────────
+5.1  npm run etl
+────────────────────────────────────────────────────────────────────────────────
+Script: scripts/etl_directors.ts
+
+Reads the Excel director database, normalizes specialty tags, extracts hyperlinks
+for website/Vimeo/email, filters out divider rows, and outputs data/directors.json.
+
+
+────────────────────────────────────────────────────────────────────────────────
+5.2  npm run embed
+────────────────────────────────────────────────────────────────────────────────
+Script: scripts/embed_directors.ts
+
+Reads data/directors.json, creates an OpenAI text-embedding-3-large vector for
+each director's profile_text, and saves the result to
+data/directors.embeddings.json (gitignored, generated locally).
+
+Note: This calls the OpenAI API once per director and may take several minutes
+depending on database size. It incurs API costs.
+
+
+────────────────────────────────────────────────────────────────────────────────
+5.3  npm run process-briefs
+────────────────────────────────────────────────────────────────────────────────
+Script: scripts/process_agency_briefs.ts
+
+Reads all PDF files from the "AGENCY BRIEFS 2" folder, extracts text, analyzes
+each brief with GPT-4o for vibe/genre/specialties/tone/style, creates embeddings,
+and saves everything to data/agency_briefs.json.
+
+
+================================================================================
+6. API ENDPOINTS
+================================================================================
+
+The application exposes three API routes:
+
+  POST /api/search
+    Accepts: { query: string, fileText?: string }
+    Returns: { results, vibeAnalysis, similarBriefs, topPickReason }
+    Performs the full search pipeline: vibe analysis, embedding, ranking,
+    similar brief lookup, and top pick explanation generation.
+
+  POST /api/upload
+    Accepts: multipart/form-data with one or more files
+    Returns: { fileText, processedImages, processedTextFiles }
+    Processes uploaded scripts, PDFs, and images into searchable text context.
+
+  GET /api/brief-pdf?file=FILENAME.pdf
+    Returns: the PDF file inline from the agency briefs library
+    Includes security sanitization to prevent directory traversal.
+
+
+================================================================================
+7. TECHNOLOGY STACK
+================================================================================
+
+  FRONTEND:
+    • Next.js 14 (App Router)
+    • React 18
+    • TypeScript
+    • Inline CSS styling (dark theme, cyan accent palette, glassmorphism effects)
+
+  BACKEND / AI:
+    • OpenAI text-embedding-3-large — semantic embeddings
+    • OpenAI GPT-4o — project vibe analysis, image analysis, top pick reasoning
+    • OpenAI GPT-4o Vision — storyboard and reference image analysis
+
+  DATA PROCESSING:
+    • SheetJS (xlsx) — Excel file parsing
+    • pdf-parse — PDF text extraction
+    • pdfjs-dist — PDF page rendering to images
+    • node-canvas — server-side canvas for PDF page image generation
+
+  VALIDATION:
+    • Zod — request body validation
+
+  VERSION CONTROL:
+    • Git LFS — used for large PDF files (>100MB) in the agency briefs library
+
+
+================================================================================
+8. HOW TO SET UP AND RUN
+================================================================================
+
+  PREREQUISITES:
+    • Node.js (v18+ recommended)
+    • An OpenAI API key with access to embeddings and GPT-4o
+
+  STEPS:
+
+    1. Clone the repository:
+         git clone https://github.com/davidpilip/connective.git
+
+    2. Install dependencies:
+         npm install
+
+    3. Create .env.local in the project root:
+         OPENAI_API_KEY=your_openai_api_key_here
+
+    4. Extract director data from Excel:
+         npm run etl
+
+    5. Generate director embeddings (uses OpenAI API):
+         npm run embed
+
+    6. (Optional) Process agency briefs if agency_briefs.json is missing:
+         npm run process-briefs
+
+    7. Start the development server:
+         npm run dev
+
+    8. Open http://localhost:3000 in your browser
+
+  PRODUCTION BUILD:
+         npm run build
+         npm start
+
+
+================================================================================
+9. END-TO-END SEARCH FLOW (STEP BY STEP)
+================================================================================
+
+Here is exactly what happens when a user searches for directors:
+
+  1. USER INPUT
+     User enters a project brief and optionally uploads files (scripts, PDFs,
+     images). Uploaded files are processed immediately via /api/upload.
+
+  2. FILE PROCESSING (if files uploaded)
+     Text is extracted from PDFs/TXT. Images and PDF page renders are analyzed
+     by GPT-4o Vision. All output is combined into supplemental fileText.
+
+  3. PROJECT VIBE ANALYSIS
+     GPT-4o analyzes the brief (+ fileText) and returns structured JSON with
+     vibe, cinematic skills, themes, genre, specialties, tone, and visual style.
+     This populates the "Project Analysis" panel in the UI.
+
+  4. QUERY EMBEDDING
+     The combined brief + fileText is embedded using text-embedding-3-large.
+
+  5. DIRECTOR RANKING
+     The query vector is compared against all director embeddings using cosine
+     similarity, with genre/specialty/brand/vibe bonuses applied. Top 12 returned.
+
+  6. SIMILAR BRIEF LOOKUP
+     The query vector is compared against pre-processed agency brief embeddings.
+     Top 3 similar briefs are returned with similarity scores.
+
+  7. TOP PICK EXPLANATION
+     GPT-4o generates a personalized recommendation for the #1 director,
+     referencing the project analysis and similar briefs.
+
+  8. UI RENDER
+     Results page shows: Project Analysis → Top Pick panel (left) + filtered
+     results grid (right). User can filter by genre and location.
+
+
+================================================================================
+10. WHAT CONNECTIVE IS NOT (LIMITATIONS)
+================================================================================
+
+  • Connective does not automatically contact directors — it provides links
+    (email, Vimeo, website) for manual outreach.
+
+  • Sample video playback in result cards is a UI placeholder; reels are linked
+    via Vimeo URLs rather than embedded.
+
+  • Director embeddings and directors.json must be generated locally — they
+    are not committed to the repository (gitignored) due to size and because
+    they require an OpenAI API key to create.
+
+  • The OpenAI API key is required for all search functionality — there is no
+    offline or cached-only mode for live searches.
+
+  • Project Analysis quality depends on OpenAI API availability and response
+    consistency; occasionally fields may return empty if the API call fails.
+
+  • The director database reflects the contents of the included Excel files
+    at the time of the last ETL run — it is not a live, auto-updating roster.
+
+
+================================================================================
+11. PROJECT STRUCTURE (FILE MAP)
+================================================================================
+
+  /app
+    page.tsx                    Main search UI and results page
+    layout.tsx                  App shell and metadata
+    /api
+      /search/route.ts          Search endpoint (ranking + AI analysis)
+      /upload/route.ts          File upload and multimodal processing
+      /brief-pdf/route.ts       Serves agency brief PDFs
+
+  /components
+    ResultCard.tsx              Individual director result card
+    TopPickPanel.tsx            Top pick sidebar with related briefs
+
+  /lib
+    embeddings.ts               Embedding creation, cosine similarity, vibe analysis
+    scoring.ts                  Hybrid director ranking algorithm
+    briefs.ts                   Agency brief loading and similarity search
+
+  /scripts
+    etl_directors.ts            Excel → directors.json
+    embed_directors.ts          directors.json → directors.embeddings.json
+    process_agency_briefs.ts    PDF briefs → agency_briefs.json
+
+  /data
+    agency_briefs.json          Pre-processed agency brief analyses
+    DIRECTOR DATABASE MASTER (2).xlsm   Source Excel (fallback)
+    directors.json              Generated director data (gitignored)
+    directors.embeddings.json   Generated embeddings (gitignored)
+
+  /AGENCY BRIEFS 2
+    *.pdf                       Original agency brief PDFs by brand
+
+  Connective-Director-Database_FINAL_UPDATED-DEMOGRAPHICS_MERGED-RESTORED.xlsx
+                                Primary director database source
+
+  PROJECT_OVERVIEW.txt          This file
+  README.md                     Quick setup and usage guide
+  SETUP.md                      Troubleshooting setup guide
+
+
+================================================================================
+12. SUMMARY
+================================================================================
+
+Connective is a production-ready AI tool that turns a creative brief — plus
+optional scripts, storyboards, and reference images — into a ranked shortlist
+of directors, complete with:
+
+  ✓ AI-powered project analysis (vibe, tone, genre, themes, visual style)
+  ✓ Semantic search across a curated director database
+  ✓ Multimodal input (text, PDF, images analyzed by GPT-4o Vision)
+  ✓ Hybrid scoring (semantic similarity + genre/specialty/brand matching)
+  ✓ Top Pick recommendation with AI-written justification
+  ✓ Related agency briefs from real brand campaigns
+  ✓ Filterable results by genre and location
+  ✓ Direct links to director reels, websites, and email
+
+It is built to save producers hours of manual roster searching and give them
+a intelligent starting point for director selection on any commercial or
+creative project.
+
+================================================================================
+                              END OF DOCUMENT
+================================================================================

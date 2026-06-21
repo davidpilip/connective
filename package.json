@@ -1,0 +1,33 @@
+{
+  "name": "connective-director-matcher",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "etl": "tsx scripts/etl_directors.ts",
+    "embed": "tsx scripts/embed_directors.ts",
+    "process-briefs": "tsx scripts/process_agency_briefs.ts"
+  },
+  "dependencies": {
+    "canvas": "^3.2.0",
+    "next": "^14.2.0",
+    "openai": "^4.28.0",
+    "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "^5.4.394",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "xlsx": "^0.18.5",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/pdf-parse": "^1.1.4",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}
